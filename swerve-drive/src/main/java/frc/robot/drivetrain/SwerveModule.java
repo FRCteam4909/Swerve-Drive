@@ -3,6 +3,7 @@ package frc.robot.drivetrain;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 
 //Implemented as a copypasta of Jack-in-the-Bot's code, with a bunch of edits.
 
@@ -19,33 +20,42 @@ public class SwerveModule extends PIDSubsystem{
     private double mLastTargetAngle;
     private int mModuleNumber;
     private DutyCycleEncoder mEncoder;
-    public TalonFX mTopMotor, mBottomMotor;
+    private TalonFX mTopMotor, mBottomMotor;
+    private double mTranslationalSpeed;
 
     //TODO Check if inverts are needed. (on both)
 
+    /*
+    *   In the Constructor, instantiate new motors. 
+    */
     public SwerveModule(int moduleNumber, TalonFX topMotor, TalonFX bottomMotor, DutyCycleEncoder encoder){
-        super(new PIDController(RobotConstants.swerveTurningkP, RobotConstants.swerveTurningkI, RobotConstants.swerveTurningkD));
+        super(new PIDController(RobotConstants.swerveModuleTurningkP, RobotConstants.swerveModuleTurningkI, RobotConstants.swerveModuleTurningkD));
 
         mModuleNumber = moduleNumber;
         mTopMotor = topMotor;
         mBottomMotor = bottomMotor;
         mEncoder = encoder;
         //Config Encoder
+        mEncoder.reset();
 
         //Config Motors
         mTopMotor.configFactoryDefault();
         mTopMotor.setNeutralMode(NeutralMode.Brake);
-        mTopMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Absolute);
-        mTopMotor.setSelectedSensorPosition(0);
+        mTopMotor.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, RobotConstants.talonPIDidx1, RobotConstants.kTimeoutMs);
+        mTopMotor.config_kP(RobotConstants.talonPIDidx1, RobotConstants.talonkP, RobotConstants.kTimeoutMs);
+        mTopMotor.config_kI(RobotConstants.talonPIDidx1, RobotConstants.talonkI, RobotConstants.kTimeoutMs);
+        mTopMotor.config_kD(RobotConstants.talonPIDidx1, RobotConstants.talonkD, RobotConstants.kTimeoutMs);
 
         mBottomMotor.configFactoryDefault();
         mBottomMotor.setNeutralMode(NeutralMode.Brake);
-        mBottomMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Absolute);
-        mBottomMotor.setSelectedSensorPosition(0);
+        mBottomMotor.configSelectedFeedbackSensor(TalonFXFeedbackDevice.IntegratedSensor, RobotConstants.talonPIDidx1, RobotConstants.kTimeoutMs);
+        mTopMotor.config_kP(RobotConstants.talonPIDidx1, RobotConstants.talonkP, RobotConstants.kTimeoutMs);
+        mTopMotor.config_kI(RobotConstants.talonPIDidx1, RobotConstants.talonkI, RobotConstants.kTimeoutMs);
+        mTopMotor.config_kD(RobotConstants.talonPIDidx1, RobotConstants.talonkD, RobotConstants.kTimeoutMs);
     }
 
     public double getError(){
-        return 0.01;
+        return this.m_controller.getPositionError();
     }
 
     public void setSpeeds(double linearSpeedTop, double linearSpeedBottom){
@@ -53,13 +63,13 @@ public class SwerveModule extends PIDSubsystem{
         mBottomMotor.set(ControlMode.Velocity, linearSpeedBottom);
     }
 
-    public void anglePID(double absoluteAngle){
-
+    public void setTranslationalSpeed(double speed){
+        mTranslationalSpeed = speed;
     }
 
     public void setTargetAngle(double targetAngle){
         mLastTargetAngle = targetAngle;
-        setSetpoint(mLastTargetAngle);
+        setSetpoint(targetAngle);
     }
 
     public double getTargetAngle(){
@@ -72,7 +82,8 @@ public class SwerveModule extends PIDSubsystem{
 
     @Override
     public void useOutput(double output, double setpoint) {
-        
+        mTopMotor.set(ControlMode.Velocity, mTranslationalSpeed + output);
+        mBottomMotor.set(ControlMode.Velocity, mTranslationalSpeed - output); //TODO, which gets subtracted??
     }
 
     @Override
