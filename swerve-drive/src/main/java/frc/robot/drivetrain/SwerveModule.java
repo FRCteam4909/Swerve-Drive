@@ -23,7 +23,7 @@ public class SwerveModule extends PIDSubsystem{
     private TalonFX mTopMotor, mBottomMotor;
     private double mTranslationalSpeed;
 
-    //TODO Check if inverts are needed. (on both)
+    //TODO Check if inverts are needed. (only a double invert)
 
     /*
     *   In the Constructor, instantiate new motors. 
@@ -67,9 +67,13 @@ public class SwerveModule extends PIDSubsystem{
         mTranslationalSpeed = speed;
     }
 
+    public double getTranslationalSpeed(){
+        return mTranslationalSpeed;
+    }
+
     public void setTargetAngle(double targetAngle){
         mLastTargetAngle = targetAngle;
-        setSetpoint(targetAngle);
+        setSetpoint(mLastTargetAngle);
     }
 
     public double getTargetAngle(){
@@ -82,8 +86,7 @@ public class SwerveModule extends PIDSubsystem{
 
     @Override
     public void useOutput(double output, double setpoint) {
-        mTopMotor.set(ControlMode.Velocity, mTranslationalSpeed + output);
-        mBottomMotor.set(ControlMode.Velocity, mTranslationalSpeed - output); //TODO, which gets subtracted??
+        setSpeeds(mTranslationalSpeed + output, mTranslationalSpeed - output); //TODO, which gets subtracted??
     }
 
     @Override
